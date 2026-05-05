@@ -1,26 +1,384 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
+/* ── Fonts ─────────────────────────────────────────────────────── */
+@import "@fontsource-variable/dm-sans";
+@import "@fontsource-variable/playfair-display";
+
+/* ── Design tokens ─────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Light mode — Muted Morandi palette */
+  --bg: #f5f2ee;
+  --bg-2: #ede9e3;
+  --surface: #ffffff;
+  --surface-2: #f0ece6;
+  --border: #ddd8d0;
+  --border-2: #ccc6bc;
+
+  --fg: #2c2825;
+  --fg-2: #5a534c;
+  --muted: #9a8f84;
+
+  --accent: #8b7355;        /* warm taupe */
+  --accent-light: #c4a882;
+  --accent-fg: #ffffff;
+
+  --sage: #7a9182;          /* sage green */
+  --sage-light: #a8c4b4;
+  --dusty-rose: #b08a8a;    /* dusty rose */
+  --dusty-blue: #7a8fa6;    /* dusty blue */
+  --wheat: #c4a96a;         /* warm wheat */
+
+  --success: #6a9e7f;
+  --success-bg: #eef5f1;
+  --warning: #b89a5a;
+  --warning-bg: #faf5e8;
+  --danger: #b07070;
+  --danger-bg: #f9efef;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  --shadow-sm: 0 1px 3px rgba(44,40,37,0.06), 0 1px 2px rgba(44,40,37,0.04);
+  --shadow-md: 0 4px 12px rgba(44,40,37,0.08), 0 2px 4px rgba(44,40,37,0.04);
+  --shadow-lg: 0 8px 24px rgba(44,40,37,0.10), 0 4px 8px rgba(44,40,37,0.06);
+
+  --sidebar-width: 220px;
+  --nav-height: 64px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ── Dark mode — Dark Morandi ──────────────────────────────────── */
+.dark {
+  --bg: #1e1c1a;
+  --bg-2: #252220;
+  --surface: #2c2825;
+  --surface-2: #342f2b;
+  --border: #3d3733;
+  --border-2: #4a4440;
+
+  --fg: #e8e2da;
+  --fg-2: #b5aca3;
+  --muted: #7a6f66;
+
+  --accent: #c4a882;
+  --accent-light: #d4bfa0;
+  --accent-fg: #1e1c1a;
+
+  --sage: #8aaa96;
+  --sage-light: #6a8a76;
+  --dusty-rose: #c09a9a;
+  --dusty-blue: #8aa0b8;
+  --wheat: #d4b87a;
+
+  --success: #7ab890;
+  --success-bg: #1e2e24;
+  --warning: #c8aa6a;
+  --warning-bg: #2a2415;
+  --danger: #c08080;
+  --danger-bg: #2e1e1e;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.2);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.25);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.3);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ── Base ──────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: 'DM Sans Variable', 'DM Sans', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Typography ────────────────────────────────────────────────── */
+.font-display {
+  font-family: 'Playfair Display Variable', 'Playfair Display', Georgia, serif;
+}
+
+h1, h2, h3 {
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+/* ── Safe area ─────────────────────────────────────────────────── */
+.pb-safe {
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+.pt-safe {
+  padding-top: max(16px, env(safe-area-inset-top));
+}
+.mb-nav {
+  margin-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom));
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-2);
+  border-radius: 4px;
+}
+
+/* ── Selection ─────────────────────────────────────────────────── */
+::selection {
+  background: var(--accent-light);
+  color: var(--fg);
+}
+
+/* ── Transitions ───────────────────────────────────────────────── */
+button, a {
+  transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+/* ── Focus ─────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Input base ────────────────────────────────────────────────── */
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--fg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--accent);
+}
+
+/* ── Range input ───────────────────────────────────────────────── */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  border: none;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* ── Layout helpers ────────────────────────────────────────────── */
+.page-content {
+  padding: 24px 20px;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .page-content {
+    padding: 32px 28px;
+  }
+}
+
+/* ── Card ──────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Tag / Badge ───────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+/* ── Button base ───────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.btn-primary:hover {
+  opacity: 0.88;
+}
+
+.btn-secondary {
+  background: var(--surface-2);
+  color: var(--fg-2);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Divider ───────────────────────────────────────────────────── */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0;
+}
+
+/* ── Chip / Filter ─────────────────────────────────────────────── */
+.chip {
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--fg-2);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.chip.active {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-color: var(--accent);
+}
+
+/* ── Sidebar layout ────────────────────────────────────────────── */
+.app-layout {
+  display: flex;
+  min-height: 100dvh;
+}
+
+.app-sidebar {
+  width: var(--sidebar-width);
+  flex-shrink: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100dvh;
+  z-index: 40;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
+}
+
+.app-sidebar.open {
+  transform: translateX(0);
+  box-shadow: var(--shadow-lg);
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom));
+}
+
+/* iPad / Mac: persistent sidebar */
+@media (min-width: 768px) {
+  .app-sidebar {
+    transform: translateX(0);
+    box-shadow: none;
+  }
+
+  .app-main {
+    margin-left: var(--sidebar-width);
+    padding-bottom: 0;
+  }
+}
+
+/* ── Bottom nav (mobile only) ──────────────────────────────────── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--nav-height);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 30;
+}
+
+@media (min-width: 768px) {
+  .bottom-nav {
+    display: none;
+  }
+}
+
+/* ── Overlay ───────────────────────────────────────────────────── */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.3);
+  z-index: 39;
+  backdrop-filter: blur(2px);
+}
+
+.sidebar-overlay.show {
+  display: block;
+}
+
+@media (min-width: 768px) {
+  .sidebar-overlay {
+    display: none !important;
+  }
 }
