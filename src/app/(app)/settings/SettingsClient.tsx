@@ -45,9 +45,26 @@ export function SettingsClient({ settings, profile }: SettingsClientProps) {
   const [exportingVocab, setExportingVocab] = useState(false)
   const [copiedPrompt, setCopiedPrompt] = useState(false)
 
+  // async function handleSave() {
+  //   if (!s) return
+
+  //   setSaving(true)
+
+  //   await updateSettings({
+  //     daily_new_word_limit: s.daily_new_word_limit,
+  //     daily_review_limit: s.daily_review_limit,
+  //     tts_language: s.tts_language,
+  //     tts_rate: s.tts_rate,
+  //     tts_enabled: s.tts_enabled,
+  //     accent_strictness: s.accent_strictness,
+  //   })
+
+  //   setSaving(false)
+  //   setSaved(true)
+  //   setTimeout(() => setSaved(false), 2000)
+  // }
   async function handleSave() {
     if (!s) return
-
     setSaving(true)
 
     await updateSettings({
@@ -58,6 +75,10 @@ export function SettingsClient({ settings, profile }: SettingsClientProps) {
       tts_enabled: s.tts_enabled,
       accent_strictness: s.accent_strictness,
     })
+
+    localStorage.setItem('tts_language', s.tts_language)
+    localStorage.setItem('tts_rate', String(s.tts_rate))
+    localStorage.setItem('tts_enabled', String(s.tts_enabled))
 
     setSaving(false)
     setSaved(true)

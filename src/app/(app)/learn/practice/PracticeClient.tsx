@@ -8,7 +8,13 @@ import { submitAnswer, finalizeWord } from '@/app/actions/practice'
 import { EmptyState } from '@/components/study/EmptyState'
 import { QuestionUI } from '@/components/study/QuestionUI'
 
-export function PracticeClient({ initialWords }: { initialWords: SessionWord[] }) {
+export function PracticeClient({
+  initialWords,
+  accentStrictness = 'lenient',
+}: {
+  initialWords: SessionWord[]
+  accentStrictness?: 'lenient' | 'strict'
+}) {
   const router = useRouter()
   const [words, setWords] = useState(initialWords)
   const [wordIndex, setWordIndex] = useState(0)
@@ -140,7 +146,8 @@ export function PracticeClient({ initialWords }: { initialWords: SessionWord[] }
 
   async function handleSubmit(answer: string) {
     if (!currentQuestion || !currentWord) return
-    const result = judgeAnswer(currentQuestion, answer, currentWord.entry)
+    // const result = judgeAnswer(currentQuestion, answer, currentWord.entry)
+    const result = judgeAnswer(currentQuestion, answer, currentWord.entry, accentStrictness)
     setFeedback(result)
     await submitAnswer(currentQuestion, answer, currentWord.entry, result)
     setWords(prev => {

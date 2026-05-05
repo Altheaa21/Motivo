@@ -9,7 +9,13 @@ import type { ReviewSessionItem } from '@/app/actions/review'
 import { EmptyState } from '@/components/study/EmptyState'
 import { QuestionUI } from '@/components/study/QuestionUI'
 
-export function ReviewClient({ initialItems }: { initialItems: ReviewSessionItem[] }) {
+export function ReviewClient({
+  initialItems,
+  accentStrictness = 'lenient',
+}: { 
+  initialItems: ReviewSessionItem[]
+  accentStrictness?: 'lenient' | 'strict'
+}) {
   const router = useRouter()
   const [items] = useState(initialItems)
   const [index, setIndex] = useState(0)
@@ -119,7 +125,8 @@ export function ReviewClient({ initialItems }: { initialItems: ReviewSessionItem
 
   async function handleSubmit(answer: string) {
     if (!current) return
-    const result = judgeAnswer(current.question, answer, current.entry)
+    // const result = judgeAnswer(current.question, answer, current.entry)
+    const result = judgeAnswer(current.question, answer, current.entry, accentStrictness)
     setFeedback(result)
     await submitReviewAnswer(current.question, answer, current.entry, result)
     setStats(prev => ({

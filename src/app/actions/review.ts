@@ -251,18 +251,18 @@ export async function loadReviewSession() {
 }
 
 // ── Submit review answer ──────────────────────────────────────────
-
 export async function submitReviewAnswer(
   question: Question,
   userAnswer: string,
   entry: WordEntry,
   judgeResult: JudgeResult
 ) {
+  // judgeResult 已经是判断好的结果，直接写入即可
+  // 重音严格度在客户端调用 judgeAnswer 时传入
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
 
-  // Write review log
   await supabase.from('review_logs').insert({
     user_id: user.id,
     word_entry_id: entry.id,
@@ -278,7 +278,6 @@ export async function submitReviewAnswer(
     was_partial: judgeResult.result === 'partial',
   })
 
-  // Update skill scores
   for (const update of judgeResult.skillUpdates) {
     const { data: existing } = await supabase
       .from('skill_scores')
@@ -303,9 +302,62 @@ export async function submitReviewAnswer(
     }
   }
 
-  // Update learning state
   await updateLearningStateAfterReview(entry.id, user.id, judgeResult.result, supabase)
 }
+// export async function submitReviewAnswer(
+//   question: Question,
+//   userAnswer: string,
+//   entry: WordEntry,
+//   judgeResult: JudgeResult
+// ) {
+//   const supabase = await createClient()
+//   const { data: { user } } = await supabase.auth.getUser()
+//   if (!user) return
+
+//   // Write review log
+//   await supabase.from('review_logs').insert({
+//     user_id: user.id,
+//     word_entry_id: entry.id,
+//     session_type: 'review',
+//     question_type: question.questionType,
+//     skill_type: question.skillType,
+//     prompt: question.prompt,
+//     expected_answer: question.expectedAnswer,
+//     user_answer: userAnswer,
+//     options: question.options ?? [],
+//     result: judgeResult.result,
+//     was_correct: judgeResult.result === 'correct',
+//     was_partial: judgeResult.result === 'partial',
+//   })
+
+//   // Update skill scores
+//   for (const update of judgeResult.skillUpdates) {
+//     const { data: existing } = await supabase
+//       .from('skill_scores')
+//       .select('*')
+//       .eq('word_entry_id', entry.id)
+//       .eq('skill_type', update.skillType)
+//       .eq('user_id', user.id)
+//       .single()
+
+//     if (existing) {
+//       const newScore = Math.min(5, Math.max(0, existing.score + update.delta))
+//       await supabase
+//         .from('skill_scores')
+//         .update({
+//           score: newScore,
+//           correct_count: update.delta > 0 ? existing.correct_count + 1 : existing.correct_count,
+//           wrong_count: update.delta < 0 ? existing.wrong_count + 1 : existing.wrong_count,
+//           last_practiced_at: new Date().toISOString(),
+//           updated_at: new Date().toISOString(),
+//         })
+//         .eq('id', existing.id)
+//     }
+//   }
+
+//   // Update learning state
+//   await updateLearningStateAfterReview(entry.id, user.id, judgeResult.result, supabase)
+// }
 
 // ── Update learning state ─────────────────────────────────────────
 

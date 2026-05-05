@@ -1,41 +1,47 @@
 import type { WordEntry } from '@/types/database'
 import { getSpeakText } from './display'
 
-let currentUtterance: SpeechSynthesisUtterance | null = null
+function getSettings() {
+  if (typeof window === 'undefined') return {
+    lang: 'fr-FR', rate: 0.9, enabled: true
+  }
+  return {
+    lang: localStorage.getItem('tts_language') ?? 'fr-FR',
+    rate: parseFloat(localStorage.getItem('tts_rate') ?? '0.9'),
+    enabled: localStorage.getItem('tts_enabled') !== 'false',
+  }
+}
 
-export function speak(text: string, lang = 'fr-FR', rate = 0.9): void {
+export function speak(text: string): void {
   if (typeof window === 'undefined') return
   if (!window.speechSynthesis) return
 
-  // Cancel current
+  const { lang, rate, enabled } = getSettings()
+  if (!enabled) return
+
   window.speechSynthesis.cancel()
 
   const utterance = new SpeechSynthesisUtterance(text)
   utterance.lang = lang
   utterance.rate = rate
 
-  // Try to find French voice
   const voices = window.speechSynthesis.getVoices()
   const frVoice =
-    voices.find(v => v.lang === 'fr-FR') ||
-    voices.find(v => v.lang === 'fr-CA') ||
+    voices.find(v => v.lang === lang) ||
+    voices.find(v => v.lang.startsWith('fr-')) ||
     voices.find(v => v.lang.startsWith('fr'))
 
-  if (frVoice) {
-    utterance.voice = frVoice
-  }
+  if (frVoice) utterance.voice = frVoice
 
-  currentUtterance = utterance
   window.speechSynthesis.speak(utterance)
 }
 
-export function speakWord(word: WordEntry, lang = 'fr-FR', rate = 0.9): void {
-  const text = getSpeakText(word)
-  speak(text, lang, rate)
+export function speakWord(word: WordEntry): void {
+  speak(getSpeakText(word))
 }
 
-export function speakSentence(sentence: string, lang = 'fr-FR', rate = 0.9): void {
-  speak(sentence, lang, rate)
+export function speakSentence(sentence: string): void {
+  speak(sentence)
 }
 
 export function stopSpeaking(): void {
@@ -48,3 +54,9 @@ export function hasFrenchVoice(): boolean {
   const voices = window.speechSynthesis?.getVoices() ?? []
   return voices.some(v => v.lang.startsWith('fr'))
 }
+
+export function initTTS(_settings: {
+  tts_language: string
+  tts_rate: number
+  tts_enabled: boolean
+}) {}

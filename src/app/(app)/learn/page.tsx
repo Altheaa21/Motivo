@@ -7,6 +7,15 @@ export default async function LearnPage() {
 
   const today = new Date().toISOString().split('T')[0]
 
+  // 读取每日新词上限
+  const { data: settings } = await supabase
+    .from('app_settings')
+    .select('daily_new_word_limit')
+    .eq('user_id', user!.id)
+    .single()
+
+  const dailyLimit = settings?.daily_new_word_limit ?? 10
+
   const { data: entries } = await supabase
     .from('word_entries')
     .select(`
@@ -19,6 +28,7 @@ export default async function LearnPage() {
     .lte('learning_states.show_after', today)
     .not('learning_states.new_training_status', 'in', '("queued","in_progress")')
     .order('created_at')
+    .limit(dailyLimit)  // 每日新词上限
 
   const { count: queuedCount } = await supabase
     .from('learning_states')
