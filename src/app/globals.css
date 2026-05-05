@@ -382,11 +382,11 @@ button, a {
 }
 
 /* ── Prevent grid/flex overflow ─────────────────────────────────── */
-.grid-cols-2 > *,
+/* .grid-cols-2 > *,
 [style*="grid-template-columns"] > * {
   min-width: 0;
   max-width: 100%;
-}
+} */
 
 /* ── Stats grid responsive ──────────────────────────────────────── */
 @media (max-width: 380px) {
