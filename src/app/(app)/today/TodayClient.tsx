@@ -98,11 +98,14 @@ export function TodayClient({
           }}>
             今日计划
           </p>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: '12px',
-          }}>
+          <div
+            className="stats-grid"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, 1fr)',
+              gap: '12px',
+            }}
+          >
             <StatCard
               label="待学新词"
               value={newCount}

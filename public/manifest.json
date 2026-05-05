@@ -1,11 +1,11 @@
 {
-  "name": "Français — Mon Vocabulaire",
-  "short_name": "Français",
+  "name": "Motivo — Mon Vocabulaire",
+  "short_name": "Motivo",
   "description": "Personal French vocabulary learning app",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f0f1a",
-  "theme_color": "#1a1a2e",
+  "background_color": "#f5f2ee",
+  "theme_color": "#f5f2ee",
   "orientation": "portrait",
   "icons": [
     {

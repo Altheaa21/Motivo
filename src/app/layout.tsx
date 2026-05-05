@@ -3,7 +3,7 @@ import './globals.css'
 import { ThemeProvider } from '@/components/layout/ThemeProvider'
 
 export const metadata: Metadata = {
-  title: 'Français — Mon Vocabulaire',
+  title: 'Motivo — Mon Vocabulaire',
   description: 'Personal French vocabulary learning app',
   manifest: '/manifest.json',
 }
