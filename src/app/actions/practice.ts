@@ -253,7 +253,8 @@ export async function finalizeWord(
 
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
-  const tomorrowStr = tomorrow.toISOString().split('T')[0]
+  const t = tomorrow
+  const tomorrowStr = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`
 
   if (passed) {
     await supabase

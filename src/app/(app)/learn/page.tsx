@@ -5,7 +5,8 @@ export default async function LearnPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const today = new Date().toISOString().split('T')[0]
+  const d = new Date()
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
   // 读取每日新词上限
   const { data: settings } = await supabase

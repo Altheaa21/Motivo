@@ -168,7 +168,8 @@ export async function loadReviewSession() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, items: [] as ReviewSessionItem[] }
 
-  const today = new Date().toISOString().split('T')[0]
+  const d = new Date()
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
   // Fetch settings for daily limit
   const { data: settings } = await supabase
