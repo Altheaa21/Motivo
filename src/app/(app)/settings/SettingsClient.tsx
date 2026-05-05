@@ -128,7 +128,15 @@ export function SettingsClient({ settings, profile }: SettingsClientProps) {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {/* Account */}
+          {/* Account */}
           <SectionCard icon={<User size={16} />} title="账号">
+            <DisplayNameEditor
+              initialName={profile?.display_name ?? ''}
+              email={profile?.email ?? ''}
+            />
+          </SectionCard>
+          
+          {/* <SectionCard icon={<User size={16} />} title="账号">
             <div
               style={{
                 display: 'flex',
@@ -159,7 +167,7 @@ export function SettingsClient({ settings, profile }: SettingsClientProps) {
                 已同步
               </div>
             </div>
-          </SectionCard>
+          </SectionCard> */}
 
           {/* Daily limits */}
           <SectionCard icon={<BookOpen size={16} />} title="每日限额">
@@ -588,5 +596,142 @@ function ExportButton({
 
       <p style={{ fontSize: '12px', color: 'var(--muted)' }}>{sub}</p>
     </button>
+  )
+}
+
+function DisplayNameEditor({
+  initialName, email,
+}: {
+  initialName: string
+  email: string
+}) {
+  const [name, setName] = useState(initialName)
+  const [editing, setEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  async function handleSave() {
+    setSaving(true)
+    const supabase = (await import('@/lib/supabase/client')).createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      await supabase
+        .from('profiles')
+        .update({ display_name: name, updated_at: new Date().toISOString() })
+        .eq('id', user.id)
+    }
+    setSaving(false)
+    setSaved(true)
+    setEditing(false)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
+  return (
+    <div>
+      <div style={{
+        display: 'flex', alignItems: 'center',
+        justifyContent: 'space-between', marginBottom: '12px',
+      }}>
+        <div>
+          <p style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '2px' }}>
+            用户名
+          </p>
+          {editing ? (
+            <input
+              value={name}
+              onChange={e => setName(e.target.value)}
+              autoFocus
+              style={{
+                padding: '7px 12px',
+                background: 'var(--surface-2)',
+                border: '1.5px solid var(--accent)',
+                borderRadius: '10px',
+                fontSize: '14px',
+                color: 'var(--fg)',
+                outline: 'none',
+                minWidth: '160px',
+              }}
+            />
+          ) : (
+            <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--fg)' }}>
+              {name || '—'}
+              {saved && (
+                <span style={{ fontSize: '12px', color: 'var(--success)', marginLeft: '8px' }}>
+                  已保存 ✓
+                </span>
+              )}
+            </p>
+          )}
+        </div>
+
+        {editing ? (
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={() => { setEditing(false); setName(initialName) }}
+              style={{
+                padding: '7px 14px',
+                background: 'var(--surface-2)',
+                border: '1px solid var(--border)',
+                borderRadius: '10px',
+                fontSize: '13px', color: 'var(--muted)',
+                cursor: 'pointer',
+              }}
+            >
+              取消
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              style={{
+                padding: '7px 14px',
+                background: 'var(--accent)', color: 'var(--accent-fg)',
+                border: 'none', borderRadius: '10px',
+                fontSize: '13px', fontWeight: 600,
+                cursor: saving ? 'not-allowed' : 'pointer',
+                opacity: saving ? 0.6 : 1,
+              }}
+            >
+              {saving ? '保存中...' : '保存'}
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setEditing(true)}
+            style={{
+              padding: '7px 14px',
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border)',
+              borderRadius: '10px',
+              fontSize: '13px', color: 'var(--fg-2)',
+              cursor: 'pointer',
+            }}
+          >
+            编辑
+          </button>
+        )}
+      </div>
+
+      <div style={{
+        display: 'flex', alignItems: 'center',
+        justifyContent: 'space-between',
+      }}>
+        <div>
+          <p style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '2px' }}>
+            邮箱
+          </p>
+          <p style={{ fontSize: '14px', color: 'var(--fg-2)' }}>{email}</p>
+        </div>
+        <div style={{
+          padding: '4px 10px',
+          background: 'var(--success-bg)',
+          border: '1px solid var(--success)',
+          borderRadius: '100px',
+          fontSize: '11px', fontWeight: 500,
+          color: 'var(--success)',
+        }}>
+          已同步
+        </div>
+      </div>
+    </div>
   )
 }

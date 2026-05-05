@@ -1,24 +1,50 @@
-import { LoginForm } from '@/components/auth/LoginForm'
+import { AuthForm } from './AuthForm'
 
 export default function LoginPage() {
   return (
-    <div
-      className="min-h-dvh flex items-center justify-center p-6"
-      style={{ background: 'var(--background)' }}
-    >
-      <div className="w-full max-w-sm">
-        <div className="mb-10 text-center">
-          <p className="text-xs tracking-[0.3em] uppercase mb-3" style={{ color: 'var(--muted)' }}>
-            application privée
+    <div style={{
+      minHeight: '100dvh',
+      background: 'var(--bg)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '24px 20px',
+      paddingTop: 'max(24px, var(--safe-top))',
+      paddingBottom: 'max(24px, var(--safe-bottom))',
+    }}>
+      <div style={{ width: '100%', maxWidth: '400px' }}>
+
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <p style={{
+            fontSize: '11px',
+            letterSpacing: '0.2em',
+            textTransform: 'uppercase',
+            color: 'var(--muted)',
+            marginBottom: '8px',
+            fontWeight: 500,
+          }}>
+            Mon
           </p>
-          <h1 className="text-4xl font-bold tracking-tight" style={{ color: 'var(--accent)' }}>
-            Français
+          <h1 className="font-display" style={{
+            fontSize: '42px',
+            fontWeight: 700,
+            color: 'var(--accent)',
+            lineHeight: 1,
+            marginBottom: '8px',
+          }}>
+            Motivo
           </h1>
-          <p className="mt-2 text-sm" style={{ color: 'var(--muted)' }}>
+          <p style={{
+            fontSize: '14px',
+            color: 'var(--muted)',
+          }}>
             Mon Vocabulaire Personnel
           </p>
         </div>
-        <LoginForm />
+
+        <AuthForm />
+
       </div>
     </div>
   )
