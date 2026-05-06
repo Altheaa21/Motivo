@@ -32,10 +32,10 @@ export function ReviewClient({
         icon="🎉"
         title="今日复习完成"
         subtitle="没有需要复习的单词，休息一下吧。"
-        primaryLabel="回到今日"
-        onPrimary={() => router.push('/today')}
-        secondaryLabel="查看词库"
-        onSecondary={() => router.push('/library')}
+        primaryLabel="巩固练习"
+        onPrimary={() => router.push('/practice')}
+        secondaryLabel="回到今日"
+        onSecondary={() => router.push('/today')}
       />
     )
   }

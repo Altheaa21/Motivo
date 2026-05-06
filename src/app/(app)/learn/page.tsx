@@ -37,9 +37,18 @@ export default async function LearnPage() {
     .eq('user_id', user!.id)
     .in('new_training_status', ['queued', 'in_progress'])
 
+  // return (
+  //   <LearnClient
+  //     entries={entries ?? []}
+  //     initialQueuedCount={queuedCount ?? 0}
+  //   />
+  // )
+  
+  const shuffled = [...(entries ?? [])].sort(() => Math.random() - 0.5)
+
   return (
     <LearnClient
-      entries={entries ?? []}
+      entries={shuffled}
       initialQueuedCount={queuedCount ?? 0}
     />
   )

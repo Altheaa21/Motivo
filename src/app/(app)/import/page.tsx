@@ -111,7 +111,7 @@ export default function ImportPage() {
               boxShadow: 'var(--shadow-sm)',
             }}
           >
-            <p
+            {/* <p
               style={{
                 fontSize: '13px',
                 fontWeight: 600,
@@ -121,7 +121,41 @@ export default function ImportPage() {
               }}
             >
               粘贴 JSON
-            </p>
+            </p> */}
+            
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '12px',
+            }}>
+              <p style={{
+                fontSize: '13px',
+                fontWeight: 600,
+                color: 'var(--fg)',
+                letterSpacing: '0.03em',
+              }}>
+                粘贴 JSON
+              </p>
+              {json.trim() && (
+                <button
+                  type="button"
+                  onClick={() => { setJson(''); setError('') }}
+                  style={{
+                    padding: '4px 10px',
+                    background: 'var(--danger-bg)',
+                    border: '1px solid var(--danger)',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    color: 'var(--danger)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  清空
+                </button>
+              )}
+            </div>
 
             <textarea
               value={json}

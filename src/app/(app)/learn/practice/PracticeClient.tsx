@@ -1,12 +1,49 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { judgeAnswer } from '@/lib/vocab/judge'
-import type { JudgeResult, SessionWord } from '@/lib/vocab/judge'
+import type { JudgeResult, SessionWord, Question } from '@/lib/vocab/judge'
 import { submitAnswer, finalizeWord } from '@/app/actions/practice'
 import { EmptyState } from '@/components/study/EmptyState'
 import { QuestionUI } from '@/components/study/QuestionUI'
+import type { WordEntry } from '@/types/database'
+
+// 打平的题目，带词信息
+interface FlatQuestion {
+  question: Question
+  word: SessionWord
+  wordId: string
+  isSpelling: boolean
+}
+
+function shuffle<T>(arr: T[]): T[] {
+  return [...arr].sort(() => Math.random() - 0.5)
+}
+
+// 把所有词的题目打平并混合，spelling 统一放最后
+function flattenQuestions(words: SessionWord[]): FlatQuestion[] {
+  const nonSpelling: FlatQuestion[] = []
+  const spelling: FlatQuestion[] = []
+
+  for (const word of words) {
+    for (const question of word.questions) {
+      const flat: FlatQuestion = {
+        question,
+        word,
+        wordId: word.entry.id,
+        isSpelling: question.questionType === 'spelling' || question.questionType === 'dictation',
+      }
+      if (flat.isSpelling) {
+        spelling.push(flat)
+      } else {
+        nonSpelling.push(flat)
+      }
+    }
+  }
+
+  return [...shuffle(nonSpelling), ...shuffle(spelling)]
+}
 
 export function PracticeClient({
   initialWords,
@@ -16,22 +53,49 @@ export function PracticeClient({
   accentStrictness?: 'lenient' | 'strict'
 }) {
   const router = useRouter()
-  const [words, setWords] = useState(initialWords)
-  const [wordIndex, setWordIndex] = useState(0)
-  const [questionIndex, setQuestionIndex] = useState(0)
+
+  // 打平题目列表，只计算一次
+  const flatQuestions = useMemo(() => flattenQuestions(initialWords), [])
+
+  const [index, setIndex] = useState(0)
   const [feedback, setFeedback] = useState<JudgeResult | null>(null)
   const [done, setDone] = useState(false)
   const [results, setResults] = useState({ passed: 0, failed: 0 })
 
-  const currentWord = words[wordIndex]
-  const currentQuestion = currentWord?.questions[questionIndex]
+  // 跟踪每个词的答题状态
+  const [wordStats, setWordStats] = useState<Record<string, {
+    attemptCount: number
+    correctCount: number
+    wrongCount: number
+    genderCorrect: boolean
+    spellingAttempted: boolean
+    finalized: boolean
+  }>>(() => {
+    const init: Record<string, {
+      attemptCount: number
+      correctCount: number
+      wrongCount: number
+      genderCorrect: boolean
+      spellingAttempted: boolean
+      finalized: boolean
+    }> = {}
+    for (const w of initialWords) {
+      init[w.entry.id] = {
+        attemptCount: 0,
+        correctCount: 0,
+        wrongCount: 0,
+        genderCorrect: false,
+        spellingAttempted: false,
+        finalized: false,
+      }
+    }
+    return init
+  })
 
-  const totalQuestions = words.reduce((sum, w) => sum + w.questions.length, 0)
-  const completedQuestions = words
-    .slice(0, wordIndex)
-    .reduce((sum, w) => sum + w.questions.length, 0) + questionIndex
+  const current = flatQuestions[index]
+  const total = flatQuestions.length
 
-  if (words.length === 0) {
+  if (initialWords.length === 0) {
     return (
       <EmptyState
         icon="📭"
@@ -145,68 +209,79 @@ export function PracticeClient({
   }
 
   async function handleSubmit(answer: string) {
-    if (!currentQuestion || !currentWord) return
-    // const result = judgeAnswer(currentQuestion, answer, currentWord.entry)
-    const result = judgeAnswer(currentQuestion, answer, currentWord.entry, accentStrictness)
+    if (!current) return
+    const result = judgeAnswer(current.question, answer, current.word.entry, accentStrictness)
     setFeedback(result)
-    await submitAnswer(currentQuestion, answer, currentWord.entry, result)
-    setWords(prev => {
-      const updated = [...prev]
-      const word = { ...updated[wordIndex] }
-      word.attemptCount += 1
-      if (result.result === 'correct') word.correctCount += 1
-      if (result.result === 'wrong') word.wrongCount += 1
-      updated[wordIndex] = word
-      return updated
+
+    await submitAnswer(current.question, answer, current.word.entry, result)
+
+    // 更新该词的答题统计
+    setWordStats(prev => {
+      const s = { ...prev[current.wordId] }
+      s.attemptCount += 1
+      if (result.result === 'correct') s.correctCount += 1
+      if (result.result === 'wrong') s.wrongCount += 1
+      if (current.question.skillType === 'gender' && result.result === 'correct') {
+        s.genderCorrect = true
+      }
+      if (current.isSpelling) {
+        s.spellingAttempted = true
+      }
+      return { ...prev, [current.wordId]: s }
     })
   }
 
   async function handleNext() {
-    if (!currentWord) return
-    const isLastQuestion = questionIndex >= currentWord.questions.length - 1
+    const isLastQuestion = index >= total - 1
 
-    if (isLastQuestion) {
-      const word = words[wordIndex]
-      const hasGenderCorrect = word.questions.some(q => q.skillType === 'gender') &&
-        feedback?.result === 'correct' &&
-        currentQuestion?.skillType === 'gender'
-      const hasSpellingAttempt = word.questions.some(q => q.questionType === 'spelling')
+    // 检查当前题目所属的词是否所有题都答完了，如果是则 finalize
+    if (current) {
+      const wordId = current.wordId
+      const remainingForWord = flatQuestions
+        .slice(index + 1)
+        .filter(q => q.wordId === wordId)
 
-      const passed = await finalizeWord(
-        word.entry,
-        word.correctCount,
-        word.attemptCount,
-        hasGenderCorrect ?? false,
-        hasSpellingAttempt
-      )
-
-      setResults(prev => ({
-        passed: prev.passed + (passed ? 1 : 0),
-        failed: prev.failed + (passed ? 0 : 1),
-      }))
-
-      if (wordIndex >= words.length - 1) {
-        setDone(true)
-      } else {
-        setWordIndex(i => i + 1)
-        setQuestionIndex(0)
+      if (remainingForWord.length === 0) {
+        // 这个词的所有题都答完了
+        const stats = wordStats[wordId]
+        if (stats && !stats.finalized) {
+          const passed = await finalizeWord(
+            current.word.entry,
+            stats.correctCount,
+            stats.attemptCount,
+            stats.genderCorrect,
+            stats.spellingAttempted
+          )
+          setWordStats(prev => ({
+            ...prev,
+            [wordId]: { ...prev[wordId], finalized: true }
+          }))
+          setResults(prev => ({
+            passed: prev.passed + (passed ? 1 : 0),
+            failed: prev.failed + (passed ? 0 : 1),
+          }))
+        }
       }
-    } else {
-      setQuestionIndex(i => i + 1)
     }
 
     setFeedback(null)
+
+    if (isLastQuestion) {
+      setDone(true)
+    } else {
+      setIndex(i => i + 1)
+    }
   }
 
-  const example = currentWord?.entry.examples?.[0]
+  const example = current?.word.entry.examples?.[0]
 
   return (
     <QuestionUI
-      question={currentQuestion}
-      entry={currentWord.entry}
+      question={current.question}
+      entry={current.word.entry}
       sessionLabel="新词练习"
-      current={completedQuestions + 1}
-      total={totalQuestions}
+      current={index + 1}
+      total={total}
       onSubmit={handleSubmit}
       feedback={feedback}
       onNext={handleNext}

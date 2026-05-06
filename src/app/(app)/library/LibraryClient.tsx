@@ -6,7 +6,10 @@ import type { WordEntry, LearningState } from '@/types/database'
 import { getPosLabel, getGenderLabel } from '@/lib/vocab/display'
 import { Upload, Search } from 'lucide-react'
 
+
 type EntryWithState = WordEntry & { learning_states: LearningState[] }
+
+// const router = useRouter()
 
 const STATUS_FILTERS = [
   { value: 'all', label: '全部' },
@@ -108,6 +111,44 @@ export function LibraryClient({ entries }: { entries: EntryWithState[] }) {
             导入单词
           </button>
         </div>
+
+        {/* Practice entry */}
+        <button
+          onClick={() => router.push('/practice')}
+          style={{
+            width: '100%', textAlign: 'left',
+            padding: '16px 20px',
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: '18px',
+            cursor: 'pointer',
+            boxShadow: 'var(--shadow-sm)',
+            display: 'flex', alignItems: 'center', gap: '14px',
+            marginBottom: '20px',
+            transition: 'border-color 0.15s ease',
+          }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent-light)'}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'}
+        >
+          <div style={{
+            width: '40px', height: '40px',
+            borderRadius: '10px',
+            background: '#f5f0e8',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '20px', flexShrink: 0,
+          }}>
+            🎯
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--fg)', marginBottom: '2px' }}>
+              巩固练习
+            </p>
+            <p style={{ fontSize: '12px', color: 'var(--muted)' }}>
+              从已学词中随机、按弱项练习，不影响复习计划
+            </p>
+          </div>
+          <span style={{ color: 'var(--muted)', fontSize: '16px' }}>→</span>
+        </button>
 
         {/* Search */}
         <div style={{

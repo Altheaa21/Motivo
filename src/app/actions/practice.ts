@@ -101,7 +101,12 @@ function generateQuestionsForWord(
     displayText: entry.display_text,
   })
 
-  return questions
+  // return questions
+  
+  // 保留 spelling 在最后，其他题目打乱
+  const spellingQ = questions.filter(q => q.questionType === 'spelling')
+  const otherQ = questions.filter(q => q.questionType !== 'spelling')
+  return [...shuffle(otherQ), ...spellingQ]
 }
 
 export async function loadPracticeSession() {
