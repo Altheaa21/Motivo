@@ -57,6 +57,8 @@ export function WordDetailClient({
 
   function startEdit() {
     setForm({
+      word: entry.word,
+      display_text: entry.display_text,
       english_primary: entry.english_primary,
       english_alternatives: [...entry.english_alternatives],
       chinese_primary: entry.chinese_primary,
@@ -178,7 +180,7 @@ export function WordDetailClient({
                   }}
                 >
                   <Archive size={13} />
-                  归档
+                  删除
                 </button>
               ) : (
                 <div style={{ display: 'flex', gap: '6px' }}>
@@ -194,7 +196,7 @@ export function WordDetailClient({
                       cursor: 'pointer', fontWeight: 600,
                     }}
                   >
-                    {archiving ? '归档中...' : '确认归档'}
+                    {archiving ? '删除中...' : '确认删除'}
                   </button>
                   <button
                     onClick={() => setConfirmArchive(false)}
@@ -332,6 +334,23 @@ export function WordDetailClient({
         <DetailCard title="释义">
           {editing ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {/* 新增：修改词本身 */}
+              <EditField label="法语单词">
+                <input
+                  value={form.word ?? entry.word}
+                  onChange={e => updateForm('word', e.target.value)}
+                  style={inputStyle}
+                  placeholder={entry.word}
+                />
+              </EditField>
+              <EditField label="显示文本（大写）">
+                <input
+                  value={form.display_text ?? entry.display_text}
+                  onChange={e => updateForm('display_text', e.target.value.toUpperCase())}
+                  style={inputStyle}
+                  placeholder={entry.display_text}
+                />
+              </EditField>
               <EditField label="英文主释义">
                 <input
                   value={form.english_primary ?? ''}

@@ -64,6 +64,32 @@ export async function updateWordEntry(id: string, updates: WordEntryUpdate) {
   return { success: !error, error: error?.message }
 }
 
+// export async function archiveWordEntry(id: string) {
+//   const supabase = await createClient()
+//   const { data: { user } } = await supabase.auth.getUser()
+//   if (!user) return { success: false }
+
+//   const { error } = await supabase
+//     .from('word_entries')
+//     .update({
+//       archived_at: new Date().toISOString(),
+//       updated_at: new Date().toISOString(),
+//     })
+//     .eq('id', id)
+//     .eq('user_id', user.id)
+
+//   // Also update learning state to archived
+//   await supabase
+//     .from('learning_states')
+//     .update({
+//       status: 'archived',
+//       updated_at: new Date().toISOString(),
+//     })
+//     .eq('word_entry_id', id)
+//     .eq('user_id', user.id)
+
+//   return { success: !error }
+// }
 export async function archiveWordEntry(id: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -71,21 +97,8 @@ export async function archiveWordEntry(id: string) {
 
   const { error } = await supabase
     .from('word_entries')
-    .update({
-      archived_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
+    .delete()
     .eq('id', id)
-    .eq('user_id', user.id)
-
-  // Also update learning state to archived
-  await supabase
-    .from('learning_states')
-    .update({
-      status: 'archived',
-      updated_at: new Date().toISOString(),
-    })
-    .eq('word_entry_id', id)
     .eq('user_id', user.id)
 
   return { success: !error }
