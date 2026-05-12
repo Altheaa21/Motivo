@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import type { WordEntry, SkillType, PartOfSpeech } from '@/types/database'
 import { getApplicableSkills } from '@/lib/vocab/skills'
 import type { Question, SessionWord, JudgeResult } from '@/lib/vocab/judge'
+import { getDisplayText, cleanWord } from '@/lib/vocab/display'
 
 // export type { Question, SessionWord, JudgeResult }
 
@@ -11,12 +12,112 @@ function shuffle<T>(arr: T[]): T[] {
   return [...arr].sort(() => Math.random() - 0.5)
 }
 
+// function generateQuestionsForWord(
+//   entry: WordEntry,
+//   allEntries: WordEntry[]
+// ): Question[] {
+//   const pos = entry.part_of_speech as PartOfSpeech
+//   const questions: Question[] = []
+
+//   const meaningDistractors = allEntries
+//     .filter(e => e.id !== entry.id && e.part_of_speech === pos)
+//     .slice(0, 3)
+//     .map(e => e.english_primary)
+
+//   questions.push({
+//     id: crypto.randomUUID(),
+//     wordEntryId: entry.id,
+//     questionType: 'meaning_choice',
+//     skillType: 'meaning',
+//     prompt: entry.display_text,
+//     expectedAnswer: entry.english_primary,
+//     options: shuffle([entry.english_primary, ...meaningDistractors]).slice(0, 4),
+//     displayText: entry.display_text,
+//   })
+
+//   const reverseDistractors = allEntries
+//     .filter(e => e.id !== entry.id && e.part_of_speech === pos)
+//     .slice(0, 3)
+//     .map(e => e.display_text)
+
+//   questions.push({
+//     id: crypto.randomUUID(),
+//     wordEntryId: entry.id,
+//     questionType: 'reverse_choice',
+//     skillType: 'reverse',
+//     prompt: entry.english_primary,
+//     expectedAnswer: entry.display_text,
+//     options: shuffle([entry.display_text, ...reverseDistractors]).slice(0, 4),
+//     displayText: entry.display_text,
+//   })
+
+//   if (pos === 'noun' && entry.article_indefinite) {
+//     const wrongArticle = entry.article_indefinite === 'un' ? 'une' : 'un'
+//     questions.push({
+//       id: crypto.randomUUID(),
+//       wordEntryId: entry.id,
+//       questionType: 'gender_quiz',
+//       skillType: 'gender',
+//       prompt: `Quel est le genre de "${entry.word}" ?`,
+//       expectedAnswer: `${entry.article_indefinite} ${entry.word}`,
+//       options: shuffle([
+//         `${entry.article_indefinite} ${entry.word}`,
+//         `${wrongArticle} ${entry.word}`,
+//       ]),
+//       displayText: entry.display_text,
+//     })
+//   }
+
+//   if (pos === 'adjective' && entry.feminine_singular && !entry.same_gender_form) {
+//     questions.push({
+//       id: crypto.randomUUID(),
+//       wordEntryId: entry.id,
+//       questionType: 'form_quiz',
+//       skillType: 'form',
+//       prompt: `Forme féminine de "${entry.masculine_singular}" ?`,
+//       expectedAnswer: entry.feminine_singular,
+//       options: shuffle([
+//         entry.feminine_singular,
+//         entry.masculine_singular,
+//         entry.feminine_plural ?? entry.feminine_singular + 's',
+//         entry.masculine_plural ?? entry.masculine_singular + 's',
+//       ]).slice(0, 4),
+//       displayText: entry.display_text,
+//     })
+//   }
+
+//   const spellTarget = pos === 'noun' && entry.article_indefinite
+//     ? `${entry.article_indefinite} ${entry.word}`
+//     : pos === 'verb'
+//     ? entry.infinitive || entry.word
+//     : entry.word
+
+//   questions.push({
+//     id: crypto.randomUUID(),
+//     wordEntryId: entry.id,
+//     questionType: 'spelling',
+//     skillType: 'spelling',
+//     prompt: `${entry.english_primary} · ${entry.chinese_primary}`,
+//     expectedAnswer: spellTarget,
+//     displayText: entry.display_text,
+//   })
+
+//   // return questions
+  
+//   // 保留 spelling 在最后，其他题目打乱
+//   const spellingQ = questions.filter(q => q.questionType === 'spelling')
+//   const otherQ = questions.filter(q => q.questionType !== 'spelling')
+//   return [...shuffle(otherQ), ...spellingQ]
+// }
+
 function generateQuestionsForWord(
   entry: WordEntry,
   allEntries: WordEntry[]
 ): Question[] {
   const pos = entry.part_of_speech as PartOfSpeech
   const questions: Question[] = []
+  const clean = cleanWord(entry.word)
+  const displayText = getDisplayText(entry)
 
   const meaningDistractors = allEntries
     .filter(e => e.id !== entry.id && e.part_of_speech === pos)
@@ -28,16 +129,16 @@ function generateQuestionsForWord(
     wordEntryId: entry.id,
     questionType: 'meaning_choice',
     skillType: 'meaning',
-    prompt: entry.display_text,
+    prompt: displayText,
     expectedAnswer: entry.english_primary,
     options: shuffle([entry.english_primary, ...meaningDistractors]).slice(0, 4),
-    displayText: entry.display_text,
+    displayText,
   })
 
   const reverseDistractors = allEntries
     .filter(e => e.id !== entry.id && e.part_of_speech === pos)
     .slice(0, 3)
-    .map(e => e.display_text)
+    .map(e => getDisplayText(e))
 
   questions.push({
     id: crypto.randomUUID(),
@@ -45,9 +146,9 @@ function generateQuestionsForWord(
     questionType: 'reverse_choice',
     skillType: 'reverse',
     prompt: entry.english_primary,
-    expectedAnswer: entry.display_text,
-    options: shuffle([entry.display_text, ...reverseDistractors]).slice(0, 4),
-    displayText: entry.display_text,
+    expectedAnswer: displayText,
+    options: shuffle([displayText, ...reverseDistractors]).slice(0, 4),
+    displayText,
   })
 
   if (pos === 'noun' && entry.article_indefinite) {
@@ -57,13 +158,13 @@ function generateQuestionsForWord(
       wordEntryId: entry.id,
       questionType: 'gender_quiz',
       skillType: 'gender',
-      prompt: `Quel est le genre de "${entry.word}" ?`,
-      expectedAnswer: `${entry.article_indefinite} ${entry.word}`,
+      prompt: `Quel est le genre de "${clean}" ?`,
+      expectedAnswer: `${entry.article_indefinite} ${clean}`,
       options: shuffle([
-        `${entry.article_indefinite} ${entry.word}`,
-        `${wrongArticle} ${entry.word}`,
+        `${entry.article_indefinite} ${clean}`,
+        `${wrongArticle} ${clean}`,
       ]),
-      displayText: entry.display_text,
+      displayText,
     })
   }
 
@@ -81,15 +182,15 @@ function generateQuestionsForWord(
         entry.feminine_plural ?? entry.feminine_singular + 's',
         entry.masculine_plural ?? entry.masculine_singular + 's',
       ]).slice(0, 4),
-      displayText: entry.display_text,
+      displayText,
     })
   }
 
   const spellTarget = pos === 'noun' && entry.article_indefinite
-    ? `${entry.article_indefinite} ${entry.word}`
+    ? `${entry.article_indefinite} ${clean}`
     : pos === 'verb'
-    ? entry.infinitive || entry.word
-    : entry.word
+    ? entry.infinitive || clean
+    : clean
 
   questions.push({
     id: crypto.randomUUID(),
@@ -98,15 +199,10 @@ function generateQuestionsForWord(
     skillType: 'spelling',
     prompt: `${entry.english_primary} · ${entry.chinese_primary}`,
     expectedAnswer: spellTarget,
-    displayText: entry.display_text,
+    displayText,
   })
 
-  // return questions
-  
-  // 保留 spelling 在最后，其他题目打乱
-  const spellingQ = questions.filter(q => q.questionType === 'spelling')
-  const otherQ = questions.filter(q => q.questionType !== 'spelling')
-  return [...shuffle(otherQ), ...spellingQ]
+  return questions
 }
 
 export async function loadPracticeSession() {

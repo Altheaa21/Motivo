@@ -1,27 +1,55 @@
 import type { WordEntry, PartOfSpeech } from '@/types/database'
 
-// Get the text to speak for TTS based on POS
-export function getSpeakText(word: WordEntry): string {
+// 自动生成显示文本（用于卡片正面、Library列表等）
+// 名词：article_indefinite + word（大写）
+// 动词：infinitive（大写）
+// 其他：word（大写）
+export function getDisplayText(word: WordEntry): string {
+  const clean = cleanWord(word.word)
   switch (word.part_of_speech) {
     case 'noun':
-      // Speak indefinite article + noun to show gender
       if (word.article_indefinite) {
-        return `${word.article_indefinite} ${word.word}`
+        return `${word.article_indefinite} ${clean}`.toUpperCase()
       }
-      return word.word
-
+      return clean.toUpperCase()
     case 'verb':
-      return word.infinitive || word.word
+      return (word.infinitive || clean).toUpperCase()
+    default:
+      return clean.toUpperCase()
+  }
+}
 
+// 清理 word 字段里可能带的冠词前缀（处理历史数据）
+export function cleanWord(word: string): string {
+  return word
+    .split('/')[0]
+    .trim()
+    .replace(/^l['']/, '')
+    .replace(/^le /, '')
+    .replace(/^la /, '')
+    .replace(/^les /, '')
+    .replace(/^un /, '')
+    .replace(/^une /, '')
+    .trim()
+}
+
+// Get the text to speak for TTS based on POS
+export function getSpeakText(word: WordEntry): string {
+  const clean = cleanWord(word.word)
+  switch (word.part_of_speech) {
+    case 'noun':
+      if (word.article_indefinite) {
+        return `${word.article_indefinite} ${clean}`
+      }
+      return clean
+    case 'verb':
+      return word.infinitive || clean
     case 'adjective':
-      // Brief card speaks masculine singular
-      return word.masculine_singular || word.word
-
+      return word.masculine_singular || clean
     case 'phrase':
       return word.word
-
     default:
-      return word.word
+      return clean
   }
 }
 

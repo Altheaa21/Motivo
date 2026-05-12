@@ -5,6 +5,7 @@ import type { WordEntry, SkillScore, SkillType, PartOfSpeech } from '@/types/dat
 import { getApplicableSkills } from '@/lib/vocab/skills'
 import type { Question } from '@/lib/vocab/judge'
 import type { JudgeResult } from '@/lib/vocab/judge'
+import { getDisplayText, cleanWord } from '@/lib/vocab/display'
 
 // ── Weighted random skill selection ──────────────────────────────
 
@@ -33,6 +34,8 @@ function generateReviewQuestion(
   allEntries: WordEntry[]
 ): Question {
   const pos = entry.part_of_speech as PartOfSpeech
+  const clean = cleanWord(entry.word)
+  const displayText = getDisplayText(entry)
 
   function shuffle<T>(arr: T[]): T[] {
     return [...arr].sort(() => Math.random() - 0.5)
@@ -52,24 +55,24 @@ function generateReviewQuestion(
         wordEntryId: entry.id,
         questionType: 'meaning_choice',
         skillType: 'meaning',
-        prompt: entry.display_text,
+        prompt: displayText,
         expectedAnswer: entry.english_primary,
         options: shuffle([entry.english_primary, ...distractors]).slice(0, 4),
-        displayText: entry.display_text,
+        displayText,
       }
     }
 
     case 'reverse': {
-      const distractors = getDistractors(e => e.display_text)
+      const distractors = getDistractors(e => getDisplayText(e))
       return {
         id: crypto.randomUUID(),
         wordEntryId: entry.id,
         questionType: 'reverse_choice',
         skillType: 'reverse',
-        prompt: entry.english_primary,
-        expectedAnswer: entry.display_text,
-        options: shuffle([entry.display_text, ...distractors]).slice(0, 4),
-        displayText: entry.display_text,
+        prompt: entry.chinese_primary,
+        expectedAnswer: displayText,
+        options: shuffle([displayText, ...distractors]).slice(0, 4),
+        displayText,
       }
     }
 
@@ -80,13 +83,13 @@ function generateReviewQuestion(
         wordEntryId: entry.id,
         questionType: 'gender_quiz',
         skillType: 'gender',
-        prompt: `Quel est le genre de "${entry.word}" ?`,
-        expectedAnswer: `${entry.article_indefinite} ${entry.word}`,
+        prompt: `Quel est le genre de "${clean}" ?`,
+        expectedAnswer: `${entry.article_indefinite} ${clean}`,
         options: shuffle([
-          `${entry.article_indefinite} ${entry.word}`,
-          `${wrongArticle} ${entry.word}`,
+          `${entry.article_indefinite} ${clean}`,
+          `${wrongArticle} ${clean}`,
         ]),
-        displayText: entry.display_text,
+        displayText,
       }
     }
 
@@ -104,16 +107,16 @@ function generateReviewQuestion(
           entry.feminine_plural ?? entry.feminine_singular + 's',
           entry.masculine_plural ?? entry.masculine_singular + 's',
         ]).slice(0, 4),
-        displayText: entry.display_text,
+        displayText,
       }
     }
 
     case 'spelling': {
       const spellTarget = pos === 'noun' && entry.article_indefinite
-        ? `${entry.article_indefinite} ${entry.word}`
+        ? `${entry.article_indefinite} ${clean}`
         : pos === 'verb'
-        ? entry.infinitive || entry.word
-        : entry.word
+        ? entry.infinitive || clean
+        : clean
       return {
         id: crypto.randomUUID(),
         wordEntryId: entry.id,
@@ -121,22 +124,24 @@ function generateReviewQuestion(
         skillType: 'spelling',
         prompt: `${entry.english_primary} · ${entry.chinese_primary}`,
         expectedAnswer: spellTarget,
-        displayText: entry.display_text,
+        displayText,
       }
     }
 
     case 'listening': {
-      const spellTarget = pos === 'noun' && entry.article_indefinite
-        ? `${entry.article_indefinite} ${entry.word}`
-        : entry.word
+      const listenTarget = pos === 'noun' && entry.article_indefinite
+        ? `${entry.article_indefinite} ${clean}`
+        : pos === 'verb'
+        ? entry.infinitive || clean
+        : clean
       return {
         id: crypto.randomUUID(),
         wordEntryId: entry.id,
         questionType: 'dictation',
         skillType: 'listening',
-        prompt: '听写：播放音频后输入你听到的内容',
-        expectedAnswer: spellTarget,
-        displayText: entry.display_text,
+        prompt: listenTarget,
+        expectedAnswer: listenTarget,
+        displayText,
       }
     }
 
@@ -146,9 +151,9 @@ function generateReviewQuestion(
         wordEntryId: entry.id,
         questionType: 'meaning_choice',
         skillType: 'meaning',
-        prompt: entry.display_text,
+        prompt: displayText,
         expectedAnswer: entry.english_primary,
-        displayText: entry.display_text,
+        displayText,
       }
   }
 }

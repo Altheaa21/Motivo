@@ -137,7 +137,7 @@ export function TodayClient({
           </div>
         </section>
 
-        {/* ── Primary CTA ───────────────────────────────────────── */}
+        {/* ── Primary CTA ─────────────────────────────────────────
         {primaryAction && (
           <section style={{ marginBottom: '32px' }}>
             <PrimaryActionCard
@@ -149,6 +149,69 @@ export function TodayClient({
               onLearn={() => router.push('/learn')}
               onPractice={() => router.push('/learn/practice')}
             />
+          </section>
+        )} */}
+
+        {/* ── Primary CTA ───────────────────────────────────────── */}
+        {primaryAction ? (
+          <section style={{ marginBottom: '32px' }}>
+            <PrimaryActionCard
+              action={primaryAction}
+              reviewCount={reviewCount}
+              newCount={newCount}
+              queuedCount={queuedCount}
+              onReview={() => router.push('/review')}
+              onLearn={() => router.push('/learn')}
+              onPractice={() => router.push('/learn/practice')}
+            />
+          </section>
+        ) : totalCount > 0 && (
+          <section style={{ marginBottom: '32px' }}>
+            <button
+              onClick={() => router.push('/practice')}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '20px 22px',
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: '18px',
+                cursor: 'pointer',
+                boxShadow: 'var(--shadow-md)',
+                transition: 'border-color 0.15s ease, transform 0.15s ease',
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent-light)'
+                ;(e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'
+                ;(e.currentTarget as HTMLElement).style.transform = 'translateY(0)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{
+                  width: '42px', height: '42px',
+                  background: '#f5f0e8',
+                  borderRadius: '12px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '22px', flexShrink: 0,
+                }}>
+                  🎯
+                </div>
+                <div style={{ textAlign: 'left' }}>
+                  <p style={{ fontSize: '16px', fontWeight: 700, color: 'var(--fg)', marginBottom: '2px' }}>
+                    巩固练习
+                  </p>
+                  <p style={{ fontSize: '13px', color: 'var(--muted)' }}>
+                    今日任务已完成，继续主动练习吧
+                  </p>
+                </div>
+              </div>
+              <ArrowRight size={20} style={{ color: 'var(--muted)', flexShrink: 0 }} />
+            </button>
           </section>
         )}
 
@@ -176,6 +239,12 @@ export function TodayClient({
               label="查看词库"
               sub={`共 ${totalCount} 个词 · 搜索、筛选、编辑`}
               onClick={() => router.push('/library')}
+            />
+            <ActionCard
+              icon={<span style={{ fontSize: '18px' }}>🎯</span>}
+              label="巩固练习"
+              sub="随机、薄弱、专项技能练习"
+              onClick={() => router.push('/practice')}
             />
             {newCount > 0 && (
               <ActionCard

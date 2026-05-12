@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import type { WordEntry, LearningState } from '@/types/database'
 import { getPosLabel, getGenderLabel } from '@/lib/vocab/display'
 import { Upload, Search } from 'lucide-react'
+import { getDisplayText } from '@/lib/vocab/display'
+
 
 
 type EntryWithState = WordEntry & { learning_states: LearningState[] }
@@ -59,7 +61,7 @@ export function LibraryClient({ entries }: { entries: EntryWithState[] }) {
     const matchSearch =
       !search ||
       entry.word.toLowerCase().includes(search.toLowerCase()) ||
-      entry.display_text.toLowerCase().includes(search.toLowerCase()) ||
+      getDisplayText(entry).toLowerCase().includes(search.toLowerCase()) ||
       entry.english_primary.toLowerCase().includes(search.toLowerCase()) ||
       entry.chinese_primary.includes(search)
     const matchStatus = statusFilter === 'all' || state?.status === statusFilter
@@ -317,7 +319,7 @@ export function LibraryClient({ entries }: { entries: EntryWithState[] }) {
                     color: 'var(--fg)', marginBottom: '4px',
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                   }}>
-                    {entry.display_text.toLowerCase().replace(/^./, c => c.toUpperCase())}
+                    {getDisplayText(entry).toLowerCase().replace(/^./, c => c.toUpperCase())}
                   </p>
                   <p style={{
                     fontSize: '12px', color: 'var(--muted)', marginBottom: '6px',

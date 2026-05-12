@@ -15,14 +15,56 @@ const MODE_LABELS: Record<PracticeMode, string> = {
   weak: '薄弱练习',
 }
 
+// localStorage key 格式: practice_{mode}_{userId}_{date}
+function getCacheKey(mode: PracticeMode, userId: string): string {
+  const d = new Date()
+  const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  return `practice_cache_${mode}_${userId}_${date}`
+}
+
+interface CachedSession {
+  questions: PracticeQuestion[]
+  index: number
+  date: string
+}
+
+function saveCache(key: string, questions: PracticeQuestion[], index: number) {
+  try {
+    const d = new Date()
+    const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    const cache: CachedSession = { questions, index, date }
+    localStorage.setItem(key, JSON.stringify(cache))
+  } catch {}
+}
+
+function loadCache(key: string): CachedSession | null {
+  try {
+    const raw = localStorage.getItem(key)
+    if (!raw) return null
+    const cache = JSON.parse(raw) as CachedSession
+    // 验证日期，跨天清除
+    const d = new Date()
+    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    if (cache.date !== today) {
+      localStorage.removeItem(key)
+      return null
+    }
+    return cache
+  } catch {
+    return null
+  }
+}
+
+function clearCache(key: string) {
+  try { localStorage.removeItem(key) } catch {}
+}
+
 export function PracticeSession({
   mode,
   onExit,
-  accentStrictness = 'lenient',
 }: {
   mode: PracticeMode
   onExit: () => void
-  accentStrictness?: 'lenient' | 'strict'
 }) {
   const [questions, setQuestions] = useState<PracticeQuestion[]>([])
   const [index, setIndex] = useState(0)
@@ -30,43 +72,68 @@ export function PracticeSession({
   const [done, setDone] = useState(false)
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({ correct: 0, partial: 0, wrong: 0 })
+  const [strictness, setStrictness] = useState<'lenient' | 'strict'>('lenient')
+  const [userId, setUserId] = useState<string | null>(null)
+  const [cacheKey, setCacheKey] = useState<string | null>(null)
+  const [resumed, setResumed] = useState(false)
 
   useEffect(() => {
-    loadQuestions()
-    loadAccentSetting()
+    init()
   }, [])
 
-  const [strictness, setStrictness] = useState<'lenient' | 'strict'>(accentStrictness)
-
-  async function loadAccentSetting() {
+  async function init() {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    const { data } = await supabase
+
+    setUserId(user.id)
+
+    // 读取重音设置
+    const { data: settings } = await supabase
       .from('app_settings')
       .select('accent_strictness')
       .eq('user_id', user.id)
       .single()
-    if (data?.accent_strictness) {
-      setStrictness(data.accent_strictness as 'lenient' | 'strict')
+    if (settings?.accent_strictness) {
+      setStrictness(settings.accent_strictness as 'lenient' | 'strict')
+    }
+
+    // 检查是否有今天的缓存
+    const key = getCacheKey(mode, user.id)
+    setCacheKey(key)
+    const cached = loadCache(key)
+
+    if (cached && cached.questions.length > 0 && cached.index < cached.questions.length) {
+      // 恢复缓存
+      setQuestions(cached.questions)
+      setIndex(cached.index)
+      setResumed(true)
+      setLoading(false)
+    } else {
+      // 重新生成
+      await loadQuestions(key)
     }
   }
 
-  async function loadQuestions() {
+  async function loadQuestions(key?: string) {
     setLoading(true)
     const qs = mode === 'random'
       ? await loadRandomPractice(15)
       : await loadWeakPractice(15)
     setQuestions(qs)
+    setIndex(0)
+    if (key && qs.length > 0) saveCache(key, qs, 0)
     setLoading(false)
   }
 
   async function handleAgain() {
-    setIndex(0)
+    // 再练一组：清除缓存，重新生成
+    if (cacheKey) clearCache(cacheKey)
     setFeedback(null)
     setDone(false)
     setStats({ correct: 0, partial: 0, wrong: 0 })
-    await loadQuestions()
+    setResumed(false)
+    if (cacheKey) await loadQuestions(cacheKey)
   }
 
   if (loading) {
@@ -101,15 +168,12 @@ export function PracticeSession({
           <p style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '24px', lineHeight: 1.6 }}>
             {mode === 'weak' ? '没有薄弱词，表现很好！' : '请先完成新词训练。'}
           </p>
-          <button
-            onClick={onExit}
-            style={{
-              padding: '11px 24px',
-              background: 'var(--accent)', color: 'var(--accent-fg)',
-              border: 'none', borderRadius: '12px',
-              fontSize: '14px', fontWeight: 600, cursor: 'pointer',
-            }}
-          >
+          <button onClick={onExit} style={{
+            padding: '11px 24px',
+            background: 'var(--accent)', color: 'var(--accent-fg)',
+            border: 'none', borderRadius: '12px',
+            fontSize: '14px', fontWeight: 600, cursor: 'pointer',
+          }}>
             返回
           </button>
         </div>
@@ -140,19 +204,12 @@ export function PracticeSession({
           }}>
             ✓
           </div>
-          <h2 style={{
-            fontSize: '20px', fontWeight: 700,
-            color: 'var(--fg)', marginBottom: '6px',
-          }}>
+          <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--fg)', marginBottom: '6px' }}>
             练习完成
           </h2>
-          <p style={{
-            fontSize: '13px', color: 'var(--muted)',
-            marginBottom: '24px',
-          }}>
+          <p style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '24px' }}>
             {MODE_LABELS[mode]}
           </p>
-
           <div style={{
             display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
             gap: '10px', marginBottom: '28px',
@@ -163,42 +220,30 @@ export function PracticeSession({
               { label: '错误', value: stats.wrong, color: 'var(--danger)' },
             ].map(s => (
               <div key={s.label} style={{
-                padding: '12px 8px',
-                background: 'var(--surface-2)',
-                borderRadius: '12px',
+                padding: '12px 8px', background: 'var(--surface-2)', borderRadius: '12px',
               }}>
-                <p style={{
-                  fontSize: '24px', fontWeight: 700,
-                  color: s.color, lineHeight: 1, marginBottom: '4px',
-                }}>
+                <p style={{ fontSize: '24px', fontWeight: 700, color: s.color, lineHeight: 1, marginBottom: '4px' }}>
                   {s.value}
                 </p>
                 <p style={{ fontSize: '11px', color: 'var(--muted)' }}>{s.label}</p>
               </div>
             ))}
           </div>
-
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <button
-              onClick={handleAgain}
-              style={{
-                width: '100%', padding: '13px',
-                background: 'var(--accent)', color: 'var(--accent-fg)',
-                border: 'none', borderRadius: '14px',
-                fontSize: '14px', fontWeight: 600, cursor: 'pointer',
-              }}
-            >
+            <button onClick={handleAgain} style={{
+              width: '100%', padding: '13px',
+              background: 'var(--accent)', color: 'var(--accent-fg)',
+              border: 'none', borderRadius: '14px',
+              fontSize: '14px', fontWeight: 600, cursor: 'pointer',
+            }}>
               再练一组
             </button>
-            <button
-              onClick={onExit}
-              style={{
-                width: '100%', padding: '13px',
-                background: 'transparent', color: 'var(--muted)',
-                border: 'none', borderRadius: '14px',
-                fontSize: '14px', cursor: 'pointer',
-              }}
-            >
+            <button onClick={onExit} style={{
+              width: '100%', padding: '13px',
+              background: 'transparent', color: 'var(--muted)',
+              border: 'none', borderRadius: '14px',
+              fontSize: '14px', cursor: 'pointer',
+            }}>
               返回练习中心
             </button>
           </div>
@@ -223,27 +268,47 @@ export function PracticeSession({
 
   function handleNext() {
     setFeedback(null)
-    if (index >= questions.length - 1) {
+    const nextIndex = index + 1
+    if (nextIndex >= questions.length) {
+      // 完成，清除缓存
+      if (cacheKey) clearCache(cacheKey)
       setDone(true)
     } else {
-      setIndex(i => i + 1)
+      setIndex(nextIndex)
+      // 更新缓存，记录已答到哪题
+      if (cacheKey) saveCache(cacheKey, questions, nextIndex)
     }
   }
 
   const example = current?.entry.examples?.[0]
+  const remaining = questions.length - index
 
   return (
-    <QuestionUI
-      question={current.question}
-      entry={current.entry}
-      sessionLabel={MODE_LABELS[mode]}
-      current={index + 1}
-      total={questions.length}
-      onSubmit={handleSubmit}
-      feedback={feedback}
-      onNext={handleNext}
-      exampleFr={feedback ? example?.fr : undefined}
-      exampleZh={feedback ? example?.zh : undefined}
-    />
+    <div>
+      {/* 恢复提示 */}
+      {resumed && index === (loadCache(cacheKey ?? '')?.index ?? 0) && (
+        <div style={{
+          padding: '10px 16px',
+          background: 'var(--surface-2)',
+          borderBottom: '1px solid var(--border)',
+          fontSize: '12px', color: 'var(--muted)',
+          textAlign: 'center',
+        }}>
+          已恢复上次进度 · 剩余 {remaining} 题
+        </div>
+      )}
+      <QuestionUI
+        question={current.question}
+        entry={current.entry}
+        sessionLabel={MODE_LABELS[mode]}
+        current={index + 1}
+        total={questions.length}
+        onSubmit={handleSubmit}
+        feedback={feedback}
+        onNext={handleNext}
+        exampleFr={feedback ? example?.fr : undefined}
+        exampleZh={feedback ? example?.zh : undefined}
+      />
+    </div>
   )
 }

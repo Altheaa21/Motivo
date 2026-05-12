@@ -7,6 +7,7 @@ import { getPosLabel, getGenderLabel } from '@/lib/vocab/display'
 import { speakWord, speakSentence } from '@/lib/vocab/tts'
 import { postponeWord, queueWord } from '@/app/actions/learn'
 import { ArrowLeft, ArrowRight, Volume2, Clock } from 'lucide-react'
+import { getDisplayText } from '@/lib/vocab/display'
 
 type EntryWithState = WordEntry & { learning_states: LearningState[] }
 
@@ -454,7 +455,7 @@ function BriefContent({ entry }: { entry: EntryWithState }) {
           fontWeight: 700, color: 'var(--fg)',
           lineHeight: 1.2, letterSpacing: '-0.01em',
         }}>
-          {toDisplayCase(entry.display_text)}
+          {toDisplayCase(getDisplayText(entry))}
         </span>
         <Volume2 size={14} style={{
           color: 'var(--muted)', marginLeft: '8px', verticalAlign: 'middle',
@@ -509,7 +510,7 @@ function DetailContent({ entry }: { entry: EntryWithState }) {
             fontSize: 'clamp(20px, 4vw, 28px)',
             fontWeight: 700, color: 'var(--fg)', lineHeight: 1.2,
           }}>
-            {toDisplayCase(entry.display_text)}
+            {toDisplayCase(getDisplayText(entry))}
           </span>
           <Volume2 size={13} style={{
             color: 'var(--muted)', marginLeft: '7px', verticalAlign: 'middle',

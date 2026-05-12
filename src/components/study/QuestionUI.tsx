@@ -302,6 +302,13 @@ export function QuestionUI({
             // Typed input
             <input
               ref={inputRef}
+
+              lang='fr'
+              autoCorrect='off'
+              autoCapitalize='none'
+              spellCheck={false}
+              inputMode='text'
+              
               type="text"
               value={typed}
               onChange={e => setTyped(e.target.value)}

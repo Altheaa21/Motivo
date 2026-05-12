@@ -8,6 +8,7 @@ import { speakWord, speakSentence } from '@/lib/vocab/tts'
 import { Volume2, Edit2, Archive, CheckCircle, X, Plus, Trash2 } from 'lucide-react'
 import { updateWordEntry, archiveWordEntry, completeIncompleteEntry } from '@/app/actions/library'
 import type { WordEntryUpdate } from '@/app/actions/library'
+import { getDisplayText } from '@/lib/vocab/display'
 
 function toDisplayCase(str: string): string {
   return str.toLowerCase().replace(/^./, c => c.toUpperCase())
@@ -58,7 +59,7 @@ export function WordDetailClient({
   function startEdit() {
     setForm({
       word: entry.word,
-      display_text: entry.display_text,
+      display_text: getDisplayText(entry),
       english_primary: entry.english_primary,
       english_alternatives: [...entry.english_alternatives],
       chinese_primary: entry.chinese_primary,
@@ -96,12 +97,14 @@ export function WordDetailClient({
         setEntry(prev => ({ ...prev, ...form } as WordEntry))
         setEditing(false)
         router.refresh()
+        // router.back()
       }
     } else {
       const result = await updateWordEntry(entry.id, form)
       if (result.success) {
         setEntry(prev => ({ ...prev, ...form } as WordEntry))
         setEditing(false)
+        // router.back()
       }
     }
     setSaving(false)
@@ -111,8 +114,9 @@ export function WordDetailClient({
     setArchiving(true)
     const result = await archiveWordEntry(entry.id)
     if (result.success) {
-      router.push('/library')
       router.refresh()
+      router.push('/library')
+      router.back()
     }
     setArchiving(false)
   }
@@ -306,7 +310,7 @@ export function WordDetailClient({
                 fontSize: 'clamp(24px, 5vw, 34px)',
                 fontWeight: 700, color: 'var(--fg)', lineHeight: 1.2,
               }}>
-                {toDisplayCase(entry.display_text)}
+                {toDisplayCase(getDisplayText(entry))}
               </span>
               <Volume2 size={16} style={{ color: 'var(--muted)', marginLeft: '8px', verticalAlign: 'middle' }} />
             </button>
@@ -345,10 +349,10 @@ export function WordDetailClient({
               </EditField>
               <EditField label="显示文本（大写）">
                 <input
-                  value={form.display_text ?? entry.display_text}
+                  value={form.display_text ?? getDisplayText(entry)}
                   onChange={e => updateForm('display_text', e.target.value.toUpperCase())}
                   style={inputStyle}
-                  placeholder={entry.display_text}
+                  placeholder={getDisplayText(entry)}
                 />
               </EditField>
               <EditField label="英文主释义">

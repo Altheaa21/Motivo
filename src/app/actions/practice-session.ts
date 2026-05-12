@@ -5,6 +5,7 @@ import type { WordEntry, SkillType } from '@/types/database'
 import type { Question, JudgeResult } from '@/lib/vocab/judge'
 import { getApplicableSkills } from '@/lib/vocab/skills'
 import { getLocalDateStr } from '@/lib/utils'
+import { getDisplayText, cleanWord } from '@/lib/vocab/display'
 
 function shuffle<T>(arr: T[]): T[] {
   return [...arr].sort(() => Math.random() - 0.5)
@@ -25,12 +26,114 @@ function makeOptions(correct: string, allEntries: WordEntry[], mapper: (e: WordE
 }
 
 // 给一个词生成一道题（按技能）
+// function generateQuestion(
+//   entry: WordEntry,
+//   skillType: SkillType,
+//   allEntries: WordEntry[]
+// ): Question | null {
+//   const id = crypto.randomUUID()
+
+//   switch (skillType) {
+//     case 'meaning':
+//       return {
+//         id, wordEntryId: entry.id,
+//         questionType: 'meaning_choice',
+//         skillType: 'meaning',
+//         prompt: entry.display_text,
+//         expectedAnswer: entry.english_primary,
+//         options: makeOptions(entry.english_primary, allEntries, e => e.english_primary),
+//         displayText: entry.display_text,
+//       }
+
+//     case 'reverse':
+//       return {
+//         id, wordEntryId: entry.id,
+//         questionType: 'reverse_choice',
+//         skillType: 'reverse',
+//         prompt: `${entry.chinese_primary}`,
+//         expectedAnswer: entry.display_text,
+//         options: makeOptions(entry.display_text, allEntries, e => e.display_text),
+//         displayText: entry.display_text,
+//       }
+
+//     case 'gender':
+//       if (entry.part_of_speech !== 'noun' || !entry.article_indefinite) return null
+//       const wrongArticle = entry.article_indefinite === 'un' ? 'une' : 'un'
+//       return {
+//         id, wordEntryId: entry.id,
+//         questionType: 'gender_quiz',
+//         skillType: 'gender',
+//         prompt: `Quel est le genre de "${entry.word}" ?`,
+//         expectedAnswer: `${entry.article_indefinite} ${entry.word}`,
+//         options: shuffle([
+//           `${entry.article_indefinite} ${entry.word}`,
+//           `${wrongArticle} ${entry.word}`,
+//         ]),
+//         displayText: entry.display_text,
+//       }
+
+//     case 'form':
+//       if (entry.part_of_speech !== 'adjective' || !entry.feminine_singular) return null
+//       return {
+//         id, wordEntryId: entry.id,
+//         questionType: 'form_quiz',
+//         skillType: 'form',
+//         prompt: `Forme féminine de "${entry.masculine_singular}" ?`,
+//         expectedAnswer: entry.feminine_singular,
+//         options: shuffle([
+//           entry.feminine_singular,
+//           entry.masculine_singular,
+//           entry.feminine_plural ?? entry.feminine_singular + 's',
+//           entry.masculine_plural ?? entry.masculine_singular + 's',
+//         ]).slice(0, 4),
+//         displayText: entry.display_text,
+//       }
+
+//     case 'spelling': {
+//       const baseWord = entry.word.split('/')[0].trim()
+//       const spellTarget = entry.part_of_speech === 'noun' && entry.article_indefinite
+//         ? `${entry.article_indefinite} ${baseWord}`
+//         : entry.part_of_speech === 'verb'
+//         ? entry.infinitive || baseWord
+//         : baseWord
+//       return {
+//         id, wordEntryId: entry.id,
+//         questionType: 'spelling',
+//         skillType: 'spelling',
+//         prompt: `${entry.english_primary} · ${entry.chinese_primary}`,
+//         expectedAnswer: spellTarget,
+//         displayText: entry.display_text,
+//       }
+//     }
+
+//     case 'listening': {
+//       const baseWord = entry.word.split('/')[0].trim()
+//       const listenTarget = entry.part_of_speech === 'noun' && entry.article_indefinite
+//         ? `${entry.article_indefinite} ${baseWord}`
+//         : entry.part_of_speech === 'verb'
+//         ? entry.infinitive || baseWord
+//         : baseWord
+//       return {
+//         id, wordEntryId: entry.id,
+//         questionType: 'dictation',
+//         skillType: 'listening',
+//         prompt: listenTarget,
+//         expectedAnswer: listenTarget,
+//         displayText: entry.display_text,
+//       }
+//     }
+
+//     default:
+//       return null
+//   }
+// }
 function generateQuestion(
   entry: WordEntry,
   skillType: SkillType,
   allEntries: WordEntry[]
 ): Question | null {
   const id = crypto.randomUUID()
+  const clean = cleanWord(entry.word)
 
   switch (skillType) {
     case 'meaning':
@@ -38,10 +141,10 @@ function generateQuestion(
         id, wordEntryId: entry.id,
         questionType: 'meaning_choice',
         skillType: 'meaning',
-        prompt: entry.display_text,
+        prompt: getDisplayText(entry),
         expectedAnswer: entry.english_primary,
         options: makeOptions(entry.english_primary, allEntries, e => e.english_primary),
-        displayText: entry.display_text,
+        displayText: getDisplayText(entry),
       }
 
     case 'reverse':
@@ -49,29 +152,30 @@ function generateQuestion(
         id, wordEntryId: entry.id,
         questionType: 'reverse_choice',
         skillType: 'reverse',
-        prompt: `${entry.chinese_primary}`,
-        expectedAnswer: entry.display_text,
-        options: makeOptions(entry.display_text, allEntries, e => e.display_text),
-        displayText: entry.display_text,
+        prompt: entry.chinese_primary,
+        expectedAnswer: getDisplayText(entry),
+        options: makeOptions(getDisplayText(entry), allEntries, e => getDisplayText(e)),
+        displayText: getDisplayText(entry),
       }
 
-    case 'gender':
+    case 'gender': {
       if (entry.part_of_speech !== 'noun' || !entry.article_indefinite) return null
       const wrongArticle = entry.article_indefinite === 'un' ? 'une' : 'un'
       return {
         id, wordEntryId: entry.id,
         questionType: 'gender_quiz',
         skillType: 'gender',
-        prompt: `Quel est le genre de "${entry.word}" ?`,
-        expectedAnswer: `${entry.article_indefinite} ${entry.word}`,
+        prompt: `Quel est le genre de "${clean}" ?`,
+        expectedAnswer: `${entry.article_indefinite} ${clean}`,
         options: shuffle([
-          `${entry.article_indefinite} ${entry.word}`,
-          `${wrongArticle} ${entry.word}`,
+          `${entry.article_indefinite} ${clean}`,
+          `${wrongArticle} ${clean}`,
         ]),
-        displayText: entry.display_text,
+        displayText: getDisplayText(entry),
       }
+    }
 
-    case 'form':
+    case 'form': {
       if (entry.part_of_speech !== 'adjective' || !entry.feminine_singular) return null
       return {
         id, wordEntryId: entry.id,
@@ -85,40 +189,39 @@ function generateQuestion(
           entry.feminine_plural ?? entry.feminine_singular + 's',
           entry.masculine_plural ?? entry.masculine_singular + 's',
         ]).slice(0, 4),
-        displayText: entry.display_text,
+        displayText: getDisplayText(entry),
       }
+    }
 
     case 'spelling': {
-      const baseWord = entry.word.split('/')[0].trim()
       const spellTarget = entry.part_of_speech === 'noun' && entry.article_indefinite
-        ? `${entry.article_indefinite} ${baseWord}`
+        ? `${entry.article_indefinite} ${clean}`
         : entry.part_of_speech === 'verb'
-        ? entry.infinitive || baseWord
-        : baseWord
+        ? entry.infinitive || clean
+        : clean
       return {
         id, wordEntryId: entry.id,
         questionType: 'spelling',
         skillType: 'spelling',
         prompt: `${entry.english_primary} · ${entry.chinese_primary}`,
         expectedAnswer: spellTarget,
-        displayText: entry.display_text,
+        displayText: getDisplayText(entry),
       }
     }
 
     case 'listening': {
-      const baseWord = entry.word.split('/')[0].trim()
       const listenTarget = entry.part_of_speech === 'noun' && entry.article_indefinite
-        ? `${entry.article_indefinite} ${baseWord}`
+        ? `${entry.article_indefinite} ${clean}`
         : entry.part_of_speech === 'verb'
-        ? entry.infinitive || baseWord
-        : baseWord
+        ? entry.infinitive || clean
+        : clean
       return {
         id, wordEntryId: entry.id,
         questionType: 'dictation',
         skillType: 'listening',
         prompt: listenTarget,
         expectedAnswer: listenTarget,
-        displayText: entry.display_text,
+        displayText: getDisplayText(entry),
       }
     }
 
